@@ -1,0 +1,61 @@
+# VocabPass · 过词
+
+直接过词的考研词汇网站：不搞记忆曲线，一张卡一个词，点开看逐义项释义，
+用「熟悉 / 模糊 / 不会」三键分类，之后只过模糊和不会，越滚越少。
+
+## 目录
+
+```
+www/                 源文件（开发用）
+  index.html
+  style.css
+  app.js
+  data.js            词库清单 + 默认词库数据（由构建脚本生成）
+  decks/kaoyan.js    考研词库分片（切换词库时按需加载）
+  icons/             SVG + PNG 图标
+  manifest.webmanifest
+dist/
+  VocabPass.html     单文件版（离线双击即用）
+  site/              可直接部署到 Cloudflare Pages 的静态站点
+build_data3.py       词库构建脚本
+sense_judge.py       义项归类（大纲义 / 熟词生义 / 中性义）
+gloss_syn.py         中文释义同义组
+build_single.py      打包单文件版 + 部署目录
+test/                jsdom 功能测试与性能基准
+```
+
+## 构建
+
+```bash
+python3 build_data3.py     # 生成 www/data.js 与 www/decks/*.js
+python3 build_single.py    # 生成 dist/VocabPass.html 与 dist/site/
+node test/run2.js          # 功能测试
+node test/perf.js          # 数据加载性能
+```
+
+## 义项归类逻辑
+
+见 `sense_judge.py`。每个义项分成三类：
+
+- **大纲义**（`g:0`）：匹配大纲释义（含同义扩展）、或带考研/四级/六级/高中标签、
+  或与大纲释义同词性且共享长公共子串。
+- **熟词生义**（`g:1`）：都不命中，但该义项带双语例句 —— 有例句才值得提示。
+- **中性义**（`g:2`）：不命中且没例句，展示但不标生义。
+
+例：`rare` 大纲是「稀有的,难得的,珍奇的;稀薄的,稀疏的」，
+有道分词得到「少见的 / 稀罕的 / 稀薄的」三个都归大纲义，
+只有「半熟的」「极好的」这类才是生义。
+
+`gloss_syn.py` 是判定质量的关键：中文释义说法太多，
+「稀罕 ≈ 稀有」「刚过去的 ≈ 最近的」这类近义关系靠同义组拉平，
+否则会把熟义误标成生义。
+
+## 词库扩展
+
+`build_data3.py` 里 `decks` 列表定义词库。加新词库时：
+
+1. 准备该考试的大纲词表（当前考研用 honghong 5500 词表）
+2. 在 `decks` 里加一项，`ready: True`
+3. 构建会输出 `www/decks/<id>.js`，前端自动出现在词库选择里
+
+标记按全局唯一 `i` 记录，切换词库不会丢掉已标记的词。

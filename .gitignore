@@ -1,0 +1,19 @@
+# 依赖
+node_modules/
+__pycache__/
+*.pyc
+
+# 抓取缓存与原始语料（可用 fetch_youdao.py 重新获取，体积数百 MB 不适合入库）
+data/raw/
+data/youdao/
+*.log
+*.zip
+
+# 构建产物（由 build_data3.py / build_single.py 生成）
+dist/
+build/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="description" content="VocabPass — 直接过词，不背曲线。考研大纲词汇逐义项讲解，熟词生义带例句，熟悉/模糊/不会一键分类并可导出。">
+<title>VocabPass · 过词</title>
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img class="logo" src="icons/icon.svg" alt="" width="26" height="26">
+    <span class="brand-txt">VocabPass <em>过词</em></span>
+    <button class="deck-pill" id="deck-pill" title="切换词库">
+      <span id="deck-name">考研英语</span>
+      <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2 4.5L6 8.5L10 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="home">概览</button>
+    <button class="tab" data-view="study">过词</button>
+    <button class="tab" data-view="list">词表</button>
+    <button class="tab" data-view="export">导出</button>
+    <button class="tab" data-view="settings">设置</button>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ================= 概览 ================= -->
+  <section class="view" id="view-home">
+    <div class="hero">
+      <div class="hero-num"><span id="home-done">0</span><small id="home-total">/ 0</small></div>
+      <div class="hero-label">已过完的词</div>
+      <div class="bar big"><i id="home-bar"></i></div>
+      <div class="hero-sub" id="home-sub">加载中…</div>
+    </div>
+
+    <div class="stats" id="home-stats">
+      <button class="stat" data-scope="known"><b id="st-known">0</b><span>熟悉</span></button>
+      <button class="stat vague" data-scope="vague"><b id="st-vague">0</b><span>模糊</span></button>
+      <button class="stat bad" data-scope="unknown"><b id="st-unknown">0</b><span>不会</span></button>
+      <button class="stat" data-scope="fresh"><b id="st-fresh">0</b><span>未学</span></button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>过词范围</h3>
+        <span class="hint" id="scope-hint">全部词</span>
+      </div>
+      <div class="deck-line" id="deck-line"></div>
+      <div class="chips" id="chips-kind">
+        <button class="chip active" data-kind="all">全部词</button>
+        <button class="chip" data-kind="base">仅大纲词</button>
+        <button class="chip" data-kind="deriv">仅派生词</button>
+        <button class="chip" data-kind="sense">仅熟词生义</button>
+      </div>
+      <div class="chips" id="chips-round">
+        <button class="chip active" data-round="fresh">新词</button>
+        <button class="chip" data-round="weak">模糊+不会</button>
+        <button class="chip" data-round="vague">只看模糊</button>
+        <button class="chip" data-round="unknown">只看不会</button>
+        <button class="chip" data-round="review">全部重过</button>
+      </div>
+      <div class="row-between">
+        <label class="field">
+          <span>本轮到</span>
+          <select id="sel-limit">
+            <option value="30">30 词</option>
+            <option value="50" selected>50 词</option>
+            <option value="100">100 词</option>
+            <option value="200">200 词</option>
+            <option value="0">全部</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>顺序</span>
+          <select id="sel-order">
+            <option value="seq">按字母</option>
+            <option value="rand" selected>随机</option>
+            <option value="shuffle-state">打散状态</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn primary big" id="btn-start">开始过词</button>
+      <div class="hint center" id="start-hint"></div>
+    </div>
+
+    <div class="panel" id="home-resume" hidden>
+      <div class="panel-head"><h3>上次没做完</h3></div>
+      <div class="hint" id="resume-info"></div>
+      <div class="row-gap">
+        <button class="btn" id="btn-resume">继续上一轮</button>
+        <button class="btn ghost" id="btn-drop">丢弃</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>集中背诵</h3></div>
+      <div class="hint">把「模糊 + 不会」的词导出来，抄写或导入到别的 App 背。过完一遍后它们会变少。</div>
+      <div class="row-gap">
+        <button class="btn" data-export="weak">导出 模糊+不会</button>
+        <button class="btn ghost" data-export="unknown">只导不会</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 过词 ================= -->
+  <section class="view" id="view-study" hidden>
+    <div class="study-top">
+      <div class="bar"><i id="study-bar"></i></div>
+      <div class="study-meta">
+        <span id="study-count">0 / 0</span>
+        <span id="study-label" class="hint"></span>
+        <button class="mini" id="btn-quit" title="结束本轮">结束</button>
+      </div>
+    </div>
+
+    <div id="study-body">
+      <div class="card" id="card" tabindex="0">
+        <div class="card-badges" id="card-badges"></div>
+        <div class="exam-tags" id="card-exam"></div>
+        <div class="word" id="card-word">—</div>
+        <div class="phon" id="card-phon"></div>
+        <div class="reveal-hint" id="reveal-hint">点击卡片 / 空格 显示释义</div>
+
+        <div class="detail" id="card-detail" hidden>
+          <div class="outline" id="card-outline"></div>
+          <div id="sense-core"></div>
+          <div id="sense-rare"></div>
+          <div id="card-extra"></div>
+        </div>
+      </div>
+
+      <div class="markbar" id="markbar" hidden>
+        <button class="mark known" data-mark="1"><b>熟悉</b><small>1</small></button>
+        <button class="mark vague" data-mark="2"><b>模糊</b><small>2</small></button>
+        <button class="mark unknown" data-mark="3"><b>不会</b><small>3</small></button>
+      </div>
+      <div class="markbar" id="studytools">
+        <button class="btn ghost small" id="btn-undo">撤销 ⌫</button>
+        <button class="btn ghost small" id="btn-speak">发音 🔊</button>
+        <button class="btn ghost small" id="btn-skip">跳过 →</button>
+      </div>
+    </div>
+
+    <div id="study-done" class="done" hidden>
+      <div class="done-emoji">✅</div>
+      <h2 id="done-title">本轮完成</h2>
+      <div class="done-stats" id="done-stats"></div>
+      <div class="row-gap wrap">
+        <button class="btn primary" id="btn-again-weak">再过一遍模糊/不会</button>
+        <button class="btn" id="btn-again-fresh">继续过新词</button>
+        <button class="btn ghost" data-export="weak">导出这部分</button>
+        <button class="btn ghost" id="btn-back-home">回概览</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 词表 ================= -->
+  <section class="view" id="view-list" hidden>
+    <div class="list-tools">
+      <input id="list-search" type="search" placeholder="搜索单词 / 中文释义" autocomplete="off">
+      <div class="chips scroll" id="chips-filter">
+        <button class="chip active" data-filter="all">全部</button>
+        <button class="chip" data-filter="known">熟悉</button>
+        <button class="chip" data-filter="vague">模糊</button>
+        <button class="chip" data-filter="unknown">不会</button>
+        <button class="chip" data-filter="fresh">未学</button>
+        <button class="chip" data-filter="sense">熟词生义</button>
+      </div>
+    </div>
+    <div class="list-info" id="list-info"></div>
+    <div id="list-body"></div>
+    <button class="btn ghost" id="btn-more" hidden>加载更多</button>
+  </section>
+
+  <!-- ================= 导出 ================= -->
+  <section class="view" id="view-export" hidden>
+    <div class="panel">
+      <div class="panel-head"><h3>导出哪些词</h3></div>
+      <div class="chips" id="chips-export">
+        <button class="chip active" data-set="weak">模糊+不会</button>
+        <button class="chip" data-set="unknown">不会</button>
+        <button class="chip" data-set="vague">模糊</button>
+        <button class="chip" data-set="known">熟悉</button>
+        <button class="chip" data-set="marked">已标记全部</button>
+      </div>
+      <div class="panel-head"><h3>格式</h3></div>
+      <div class="chips" id="chips-format">
+        <button class="chip active" data-fmt="detail">单词+释义+例句</button>
+        <button class="chip" data-fmt="brief">单词+释义</button>
+        <button class="chip" data-fmt="word">仅单词</button>
+        <button class="chip" data-fmt="csv">CSV 表格</button>
+      </div>
+      <div class="row-between">
+        <label class="switch"><input type="checkbox" id="exp-rare"><span>含熟词生义</span></label>
+        <label class="switch"><input type="checkbox" id="exp-form"><span>含词形变化</span></label>
+      </div>
+      <div class="row-gap">
+        <button class="btn primary" id="btn-download">导出文件 .txt</button>
+        <button class="btn" id="btn-copy">复制到剪贴板</button>
+      </div>
+      <div class="hint" id="export-info"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>预览</h3></div>
+      <pre class="preview" id="export-preview">（还没有可导出的词）</pre>
+    </div>
+  </section>
+
+  <!-- ================= 设置 ================= -->
+  <section class="view" id="view-settings" hidden>
+    <div class="panel">
+      <div class="panel-head"><h3>卡片</h3></div>
+      <label class="switch"><input type="checkbox" id="set-phon" checked><span>显示音标</span></label>
+      <label class="switch"><input type="checkbox" id="set-auto-speak"><span>翻卡时自动朗读</span></label>
+      <label class="switch"><input type="checkbox" id="set-hide-ex"><span>默认折叠例句（点开释义后手动展开）</span></label>
+      <label class="switch"><input type="checkbox" id="set-hide-known"><span>「全部重过」时跳过已熟悉的词</span></label>
+      <div class="field">
+        <span>正文字号</span>
+        <input type="range" id="set-font" min="16" max="28" step="1" value="22">
+      </div>
+      <div class="field" style="margin-top:8px">
+        <span>主题</span>
+        <select id="set-theme">
+          <option value="dark">深色</option>
+          <option value="light">浅色</option>
+        </select>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>数据</h3></div>
+      <div class="hint" id="data-info"></div>
+      <div class="hint" id="storage-badge" style="margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px"></div>
+      <div class="row-gap wrap">
+        <button class="btn" id="btn-backup">备份进度(.json)</button>
+        <button class="btn ghost" id="btn-restore">恢复进度</button>
+        <button class="btn ghost" id="btn-reset">清空全部进度</button>
+      </div>
+      <div class="hint" style="margin-top:10px">
+        进度自动存在这台设备的浏览器里（localStorage 快照 + IndexedDB 主副本），
+        不清理浏览器数据就不会丢。要跨设备，用「备份进度」把 json 放进网盘，
+        在另一台设备上「恢复进度」即可。
+      </div>
+      <input type="file" id="file-restore" accept=".json,application/json" hidden>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>云同步（可选 · 坚果云 WebDAV）</h3><span class="hint" id="dav-state">未启用</span></div>
+      <div class="hint" style="margin-bottom:10px">
+        坚果云不支持浏览器跨域（服务端没有 CORS 头），所以这里不直接连 WebDAV，
+        只做「一键导出/导入」：用坚果云同步文件夹中转，或者配合浏览器插件。
+        最省事的跨设备方案仍是下面的备份文件 + 网盘。
+      </div>
+      <div class="field"><span>服务器</span><input id="dav-url" type="text" placeholder="https://dav.jianguoyun.com/dav/考研词汇/"></div>
+      <div class="field" style="margin-top:6px"><span>账号</span><input id="dav-user" type="text" placeholder="邮箱" autocomplete="off"></div>
+      <div class="field" style="margin-top:6px"><span>应用密码</span><input id="dav-pass" type="password" placeholder="第三方应用密码" autocomplete="off"></div>
+      <div class="row-gap wrap">
+        <button class="btn" id="btn-dav-save">保存配置</button>
+        <button class="btn ghost" id="btn-dav-pull">从云端拉取</button>
+        <button class="btn ghost" id="btn-dav-push">推到云端</button>
+      </div>
+      <div class="hint" id="dav-msg" style="margin-top:8px"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>快捷键</h3></div>
+      <div class="keys">
+        <div><kbd>空格</kbd> 显示释义 / 下一张</div>
+        <div><kbd>1</kbd> 熟悉　<kbd>2</kbd> 模糊　<kbd>3</kbd> 不会</div>
+        <div><kbd>⌫</kbd> 撤销　<kbd>S</kbd> 发音　<kbd>→</kbd> 跳过</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>关于</h3></div>
+      <div class="hint">
+        词库：考研英语大纲 5500 词 + 同根派生/词形词，释义与例句来自公开词典数据。<br>
+        所有记录只存在这台设备的浏览器里，不上传。
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

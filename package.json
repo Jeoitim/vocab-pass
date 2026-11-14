@@ -1,0 +1,19 @@
+{
+  "name": "kaoyan-vocab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@xmldom/xmldom": "^0.9.12",
+    "fake-indexeddb": "^6.2.8",
+    "jsdom": "^31.0.1",
+    "sharp": "^0.35.5"
+  }
+}
